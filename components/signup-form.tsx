@@ -76,6 +76,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       <div className="w-full max-w-sm">
         <Card {...props}>
           <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">onBoardX</CardTitle>
             <CardTitle>Create an account</CardTitle>
             <CardDescription>
               Enter your information below to create your account

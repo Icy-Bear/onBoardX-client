@@ -16,9 +16,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Auth Template",
+  title: "onBoardX",
   description:
-    "A secure authentication template with admin panel and user management.",
+    "The industry-standard platform for secure authentication and real-time quizzes.",
 };
 
 export default function RootLayout({

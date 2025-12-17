@@ -187,6 +187,12 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         } else {
             setWarnings(prev => prev + 1);
             toast.error(`Warning ${warnings + 1}/5: ${reason}`);
+
+            // Notify server of warning
+            if (socket) {
+                socket.emit("player_warning", { sessionId, reason });
+            }
+
             // Try to re-enter fullscreen if that was the violation
             enterFullscreen();
         }
@@ -207,6 +213,7 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
 
     const joinSession = () => {
         if (!socket || !sessionId.trim()) return;
+        enterFullscreen();
         socket.emit("join_session", { sessionId: sessionId.toUpperCase(), playerName: userName });
     };
 
@@ -266,6 +273,9 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
                     <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
                     <h2 className="text-xl font-semibold">Waiting for host to start...</h2>
                     <p className="text-muted-foreground">Get ready! The quiz will start in fullscreen.</p>
+                    <Button onClick={enterFullscreen} variant="outline" className="mt-4">
+                        Enter Fullscreen
+                    </Button>
                 </CardContent>
             </Card>
         );

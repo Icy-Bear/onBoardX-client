@@ -270,9 +270,17 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
                                                     {p.name} {p.status === 'banned' && "(Banned)"}
                                                 </span>
                                             </div>
-                                            <Badge variant={p.status === 'banned' ? "destructive" : "outline"}>
-                                                {p.score} pts
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                {/* Show warnings if any */}
+                                                {(p as any).warnings > 0 && p.status !== 'banned' && (
+                                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                                        {(p as any).warnings} ⚠️
+                                                    </Badge>
+                                                )}
+                                                <Badge variant={p.status === 'banned' ? "destructive" : "outline"}>
+                                                    {p.score} pts
+                                                </Badge>
+                                            </div>
                                         </div>
                                     ))}
                             </div>

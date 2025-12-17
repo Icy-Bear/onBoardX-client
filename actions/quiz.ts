@@ -40,6 +40,7 @@ export async function createQuestion(data: {
     });
 
     revalidatePath("/dashboard/quiz/questions");
+    revalidatePath("/dashboard/quiz/create");
 }
 
 export async function deleteQuestion(id: string) {
@@ -53,6 +54,7 @@ export async function deleteQuestion(id: string) {
 
     await db.delete(questions).where(eq(questions.id, id));
     revalidatePath("/dashboard/quiz/questions");
+    revalidatePath("/dashboard/quiz/create");
 }
 
 import { quizzes, quizQuestions } from "@/db/schema/quiz-schema";
