@@ -72,8 +72,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <IconCommand className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Auth Template</span>
-                  <span className="truncate text-xs">Starter Kit</span>
+                  <span className="truncate font-semibold">onBoard-X</span>
+                  <span className="truncate text-xs">Let's start your journey</span>
                 </div>
               </a>
             </SidebarMenuButton>
