@@ -37,7 +37,7 @@ export default async function HostQuizSessionPage({
                     <p className="text-muted-foreground">{quiz.description}</p>
                 )}
             </div>
-            <HostScreen questions={questions} userId={session.user.id} />
+            <HostScreen questions={questions} userId={session.user.id} quizId={quizId} />
         </div>
     );
 }

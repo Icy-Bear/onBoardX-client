@@ -16,7 +16,7 @@ interface Player {
     status?: 'active' | 'banned';
 }
 
-export function HostScreen({ questions, userId }: { questions: Question[]; userId: string }) {
+export function HostScreen({ questions, userId, quizId }: { questions: Question[]; userId: string; quizId: string }) {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [players, setPlayers] = useState<Player[]>([]);
@@ -64,9 +64,8 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
             // Check for existing session in localStorage
             // Note: In a real app, we might want to validate this session ID or check if it's expired
             // But for now, the server handles the check based on hostId.
-            // Actually, the server checks hostId to find the session. 
             // So we just emit create_session, and the server will return the existing one if it matches.
-            newSocket.emit("create_session", { hostId: userId });
+            newSocket.emit("create_session", { hostId: userId, quizId });
         });
 
         newSocket.on("connect_error", (err) => {
