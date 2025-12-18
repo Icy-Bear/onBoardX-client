@@ -100,6 +100,11 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
             setPlayers(players);
         });
 
+        newSocket.on("player_banned", ({ playerName, players }) => {
+            setPlayers(players);
+            toast.error(`${playerName} has been banned!`);
+        });
+
         newSocket.on("quiz_ended", ({ finalScores }) => {
             setGameStatus("ended");
             setPlayers(finalScores);
@@ -270,7 +275,13 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
                         <CardContent>
                             <div className="space-y-2">
                                 {players
-                                    .sort((a, b) => b.score - a.score)
+                                    .sort((a, b) => {
+                                        // Sort banned players to the bottom
+                                        if (a.status === 'banned' && b.status !== 'banned') return 1;
+                                        if (a.status !== 'banned' && b.status === 'banned') return -1;
+                                        // Then sort by score
+                                        return b.score - a.score;
+                                    })
                                     .map((p, i) => (
                                         <div
                                             key={p.id}

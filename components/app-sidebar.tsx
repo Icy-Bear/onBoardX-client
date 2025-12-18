@@ -48,11 +48,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           url: "/dashboard/quiz/host",
           icon: IconDashboard, // Placeholder icon
         },
-        {
-          title: "Banned Users",
-          url: "/dashboard/users/banned",
-          icon: IconUser,
-        }
       ] : []),
       {
         title: "Play Quiz",

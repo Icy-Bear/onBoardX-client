@@ -322,17 +322,22 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         return (
             <Card className="max-w-md mx-auto mt-8 text-center border-red-500">
                 <CardContent className="py-12 space-y-6">
-                    <div className="h-16 w-16 mx-auto rounded-full bg-red-100 flex items-center justify-center">
+                    <div className="h-16 w-16 mx-auto rounded-full bg-red-100 flex items-center justify-center animate-pulse">
                         <span className="text-4xl">🚫</span>
                     </div>
                     <h2 className="text-2xl font-bold text-red-600">You have been banned!</h2>
-                    <p className="text-muted-foreground">
-                        You exceeded the maximum number of warnings (5) for cheating attempts.
-                        You are banned from this session.
-                    </p>
-                    <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
-                        Back to Home
-                    </Button>
+                    <div className="space-y-2 text-muted-foreground">
+                        <p>
+                            You exceeded the maximum number of warnings (5) for cheating attempts.
+                        </p>
+                        <p className="font-medium text-foreground">
+                            Please contact the admin to be unbanned.
+                        </p>
+                        <p className="text-sm italic">
+                            Waiting for admin action...
+                        </p>
+                    </div>
+                    {/* Removed Back to Home button to keep them on this screen waiting for unban */}
                 </CardContent>
             </Card>
         );
