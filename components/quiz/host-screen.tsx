@@ -130,6 +130,21 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
         setCurrentQuestionIndex((prev) => prev + 1);
     };
 
+    const unbanPlayer = (playerId: string) => {
+        if (!socket || !sessionId) return;
+        socket.emit("unban_player", { sessionId, playerId });
+        toast.success("Player unbanned");
+    };
+
+    const resetSession = () => {
+        if (!socket || !sessionId) return;
+        socket.emit("reset_session", { sessionId });
+        toast.info("Resetting session...");
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
+
     if (connectionError) {
         return (
             <div className="flex flex-col justify-center items-center h-64 space-y-4 text-center">
@@ -277,9 +292,21 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
                                                         {(p as any).warnings} ⚠️
                                                     </Badge>
                                                 )}
-                                                <Badge variant={p.status === 'banned' ? "destructive" : "outline"}>
-                                                    {p.score} pts
-                                                </Badge>
+
+                                                {p.status === 'banned' ? (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:hover:bg-red-900/20"
+                                                        onClick={() => unbanPlayer(p.id)}
+                                                    >
+                                                        Unban
+                                                    </Button>
+                                                ) : (
+                                                    <Badge variant="outline">
+                                                        {p.score} pts
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -312,7 +339,7 @@ export function HostScreen({ questions, userId }: { questions: Question[]; userI
                                     </div>
                                 ))}
                         </div>
-                        <Button onClick={() => window.location.reload()} variant="outline">
+                        <Button onClick={resetSession} variant="outline">
                             Host Another
                         </Button>
                     </CardContent>

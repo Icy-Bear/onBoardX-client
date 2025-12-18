@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trophy } from "lucide-react";
+import { Loader2, Trophy, Maximize2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Question } from "@/db/schema/quiz-schema";
 
@@ -30,10 +30,14 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
     const [score, setScore] = useState(0);
     const [startTime, setStartTime] = useState<number>(0);
     const [warnings, setWarnings] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(true); // Default to true to avoid flash, check in useEffect
 
     const [isConnecting, setIsConnecting] = useState(true);
 
     useEffect(() => {
+        // Initial check
+        setIsFullscreen(!!document.fullscreenElement);
+
         const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
         const newSocket = io(socketUrl, {
             reconnectionAttempts: 5,
@@ -51,8 +55,6 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
 
             if (savedSession && savedName && !joined) {
                 setSessionId(savedSession);
-                // We need to wait a bit or just emit immediately? 
-                // Better to emit immediately on connect if we have data
                 newSocket.emit("join_session", { sessionId: savedSession, playerName: savedName });
                 toast.info("Rejoining previous session...");
             }
@@ -66,20 +68,15 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
 
         newSocket.on("joined_success", ({ sessionId }) => {
             setJoined(true);
-            setSessionId(sessionId); // Ensure state is synced
-            // Save to localStorage
+            setSessionId(sessionId);
             localStorage.setItem("playerSessionId", sessionId);
-            localStorage.setItem("playerName", userName); // We use the prop userName, but for rejoin we might need to store it if prop is missing? 
-            // Actually, the prop userName comes from auth, so it should be stable. 
-            // But if we want to support anonymous rejoin, we'd need to store the name used.
-            // Here we just store it to be safe.
+            localStorage.setItem("playerName", userName);
             toast.success("Joined session successfully!");
         });
 
         newSocket.on("error", ({ message }) => {
             toast.error(message);
             if (message === "Session not found" || message === "You are banned from this session!") {
-                // Clear invalid session
                 localStorage.removeItem("playerSessionId");
                 localStorage.removeItem("playerName");
                 setJoined(false);
@@ -94,6 +91,7 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             setSelectedAnswer(null);
             setIsAnswerSubmitted(false);
             setStartTime(Date.now());
+            // Try to enter fullscreen, but it might fail if async. The overlay will handle it.
             enterFullscreen();
         });
 
@@ -102,14 +100,32 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             const myScore = finalScores.find((p: Player) => p.name === userName)?.score || 0;
             setScore(myScore);
             exitFullscreen();
-            localStorage.removeItem("playerSessionId"); // Clear on end
+            localStorage.removeItem("playerSessionId");
         });
 
         newSocket.on("you_are_banned", () => {
             setGameStatus("banned");
             exitFullscreen();
             toast.error("You have been banned for cheating!");
-            localStorage.removeItem("playerSessionId"); // Clear on ban
+            localStorage.removeItem("playerSessionId");
+        });
+
+        newSocket.on("you_are_unbanned", () => {
+            setGameStatus("playing"); // Or waiting, but usually unban happens during game
+            setWarnings(0);
+            toast.success("You have been unbanned! Please play fairly.");
+            enterFullscreen();
+        });
+
+        newSocket.on("session_closed", () => {
+            localStorage.removeItem("playerSessionId");
+            localStorage.removeItem("playerName");
+            setJoined(false);
+            setGameStatus("waiting"); // Reset to initial state or just reload? 
+            // Better to just reset joined to false so they see the join screen again
+            setSessionId("");
+            exitFullscreen();
+            toast.info("The host has closed the session.");
         });
 
         return () => {
@@ -117,9 +133,10 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         };
     }, [userName]);
 
-    // Security Measures
+    // Security & Fullscreen Handling
     useEffect(() => {
-        if (gameStatus !== "playing") return;
+        if (!joined) return;
+        if (gameStatus !== "playing" && gameStatus !== "waiting") return;
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
@@ -132,7 +149,9 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         };
 
         const handleFullscreenChange = () => {
-            if (!document.fullscreenElement) {
+            const isFull = !!document.fullscreenElement;
+            setIsFullscreen(isFull);
+            if (!isFull) {
                 handleViolation("Exiting fullscreen is not allowed!");
             }
         };
@@ -143,12 +162,10 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         };
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Prevent Copy, Paste, Cut
             if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
                 e.preventDefault();
                 toast.warning("Copy/Paste is disabled!");
             }
-            // Prevent DevTools (F12, Ctrl+Shift+I)
             if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I')) {
                 e.preventDefault();
                 toast.warning("Developer tools are disabled!");
@@ -157,7 +174,7 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
 
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             e.preventDefault();
-            e.returnValue = ''; // Shows browser default confirmation
+            e.returnValue = '';
         };
 
         document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -167,6 +184,9 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         document.addEventListener("keydown", handleKeyDown);
         window.addEventListener("beforeunload", handleBeforeUnload);
 
+        // Check fullscreen on mount/update
+        setIsFullscreen(!!document.fullscreenElement);
+
         return () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange);
             window.removeEventListener("blur", handleBlur);
@@ -175,11 +195,10 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             document.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
-    }, [gameStatus, warnings, socket, sessionId]);
+    }, [gameStatus, warnings, socket, sessionId, joined]);
 
     const handleViolation = async (reason: string) => {
         if (warnings >= 4) {
-            // Ban User from Session
             if (socket) {
                 socket.emit("ban_player", { sessionId, reason });
             }
@@ -187,27 +206,26 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         } else {
             setWarnings(prev => prev + 1);
             toast.error(`Warning ${warnings + 1}/5: ${reason}`);
-
-            // Notify server of warning
             if (socket) {
                 socket.emit("player_warning", { sessionId, reason });
             }
-
-            // Try to re-enter fullscreen if that was the violation
-            enterFullscreen();
         }
     };
 
     const enterFullscreen = () => {
         const elem = document.documentElement;
         if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(err => console.log(err));
+            elem.requestFullscreen()
+                .then(() => setIsFullscreen(true))
+                .catch(err => console.log(err));
         }
     };
 
     const exitFullscreen = () => {
         if (document.fullscreenElement) {
-            document.exitFullscreen().catch(err => console.log(err));
+            document.exitFullscreen()
+                .then(() => setIsFullscreen(false))
+                .catch(err => console.log(err));
         }
     };
 
@@ -266,16 +284,35 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         );
     }
 
+    // Force Fullscreen Overlay
+    if ((gameStatus === "playing" || gameStatus === "waiting") && !isFullscreen) {
+        return (
+            <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300">
+                <div className="bg-card p-8 rounded-2xl shadow-2xl border max-w-md w-full space-y-6">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                        <Maximize2 className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold mb-2">Fullscreen Required</h2>
+                        <p className="text-muted-foreground">
+                            To ensure a fair quiz environment, you must stay in fullscreen mode.
+                        </p>
+                    </div>
+                    <Button size="lg" onClick={enterFullscreen} className="w-full rounded-full">
+                        Enter Fullscreen
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     if (gameStatus === "waiting") {
         return (
             <Card className="max-w-md mx-auto mt-8 text-center">
                 <CardContent className="py-12 space-y-4">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
                     <h2 className="text-xl font-semibold">Waiting for host to start...</h2>
-                    <p className="text-muted-foreground">Get ready! The quiz will start in fullscreen.</p>
-                    <Button onClick={enterFullscreen} variant="outline" className="mt-4">
-                        Enter Fullscreen
-                    </Button>
+                    <p className="text-muted-foreground">Get ready! The quiz will start soon.</p>
                 </CardContent>
             </Card>
         );
@@ -367,3 +404,4 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         </div>
     );
 }
+
