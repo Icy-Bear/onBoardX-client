@@ -179,30 +179,30 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
 
         const handleResize = () => {
             // Check if window size is significantly reduced (indication of split screen)
-            // We use screen.availWidth/Height as a baseline for what "full" should roughly be
-            // But simpler is to check if it's not fullscreen
 
             if (!document.fullscreenElement) {
-                // If not fullscreen, we already handle that with fullscreenchange
-                // But split screen might keep fullscreen active in some browsers? Unlikely.
-                // Main issue is if they resize the window on desktop or split screen on mobile
-
-                // If we are in "playing" mode, we expect to be fullscreen.
-                // If resize happens and we are NOT fullscreen, it's a violation.
-                // If we ARE fullscreen, resize shouldn't happen usually unless device rotation?
-
-                // Let's just check if the window is significantly smaller than the screen
                 const widthRatio = window.innerWidth / screen.width;
                 const heightRatio = window.innerHeight / screen.height;
 
-                // If taking up less than 90% of screen in either dimension (allow for some UI bars)
-                if (widthRatio < 0.9 || heightRatio < 0.8) {
+                // Stricter thresholds: 92% width, 85% height (account for address bars)
+                // We allow a bit more leeway on height for mobile browsers with large address bars
+                if (widthRatio < 0.92 || heightRatio < 0.85) {
                     handleViolation("Split-screen or window resizing is not allowed!");
+                }
+
+                // Aspect Ratio Check
+                // In split screen, the aspect ratio changes drastically compared to the screen
+                const screenAspect = screen.width / screen.height;
+                const windowAspect = window.innerWidth / window.innerHeight;
+
+                // Allow some variance (e.g. 20%) but split screen usually changes it significantly
+                // We check absolute difference to handle both portrait/landscape split
+                if (Math.abs(screenAspect - windowAspect) > 0.2) {
+                    handleViolation("Window aspect ratio mismatch! Split-screen detected.");
                 }
 
                 // Check for floating window (non-zero position)
                 // On mobile, a full app usually starts at 0,0. Floating windows are offset.
-                // Allow small margin for status bars etc.
                 if (window.screenX > 50 || window.screenY > 100) {
                     handleViolation("Floating windows are not allowed!");
                 }
