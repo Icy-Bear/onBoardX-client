@@ -199,6 +199,13 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
                 if (widthRatio < 0.9 || heightRatio < 0.8) {
                     handleViolation("Split-screen or window resizing is not allowed!");
                 }
+
+                // Check for floating window (non-zero position)
+                // On mobile, a full app usually starts at 0,0. Floating windows are offset.
+                // Allow small margin for status bars etc.
+                if (window.screenX > 50 || window.screenY > 100) {
+                    handleViolation("Floating windows are not allowed!");
+                }
             }
         };
 
@@ -209,6 +216,17 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
         document.addEventListener("keydown", handleKeyDown);
         window.addEventListener("beforeunload", handleBeforeUnload);
         window.addEventListener("resize", handleResize);
+
+        // Periodic check to catch state where events might be missed
+        const intervalId = setInterval(() => {
+            if (document.hidden) {
+                handleViolation("Tab switching/minimizing is not allowed!");
+            }
+            if (!document.fullscreenElement) {
+                // Re-run resize/position logic
+                handleResize();
+            }
+        }, 2000);
 
         // Check fullscreen on mount/update
         setIsFullscreen(!!document.fullscreenElement);
@@ -221,6 +239,7 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             document.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("beforeunload", handleBeforeUnload);
             window.removeEventListener("resize", handleResize);
+            clearInterval(intervalId);
         };
     }, [gameStatus, warnings, socket, sessionId, joined]);
 
