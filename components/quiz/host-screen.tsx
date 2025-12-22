@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, Play, ArrowRight, Trophy, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Users, Play, ArrowRight, Trophy, AlertCircle, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Question } from "@/db/schema/quiz-schema";
 
@@ -24,6 +24,7 @@ export function HostScreen({ questions, userId, quizId }: { questions: Question[
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(true);
+    const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
 
     // Use a ref to track if we're currently mounting/connecting to avoid double-firing in strict mode
     const socketRef = useRef<Socket | null>(null);
@@ -93,6 +94,7 @@ export function HostScreen({ questions, userId, quizId }: { questions: Question[
             // Restore current question index if rejoining
             setCurrentQuestionIndex(index);
             setGameStatus("playing");
+            setIsAnswerRevealed(false);
         });
 
         newSocket.on("leaderboard_update", ({ players }) => {
@@ -132,6 +134,7 @@ export function HostScreen({ questions, userId, quizId }: { questions: Question[
         if (!socket || !sessionId) return;
         socket.emit("next_question", { sessionId });
         setCurrentQuestionIndex((prev) => prev + 1);
+        setIsAnswerRevealed(false);
     };
 
     const unbanPlayer = (playerId: string) => {
@@ -247,7 +250,7 @@ export function HostScreen({ questions, userId, quizId }: { questions: Question[
                                 {((questions[currentQuestionIndex]?.options as string[]) || []).map((opt, idx) => (
                                     <div
                                         key={idx}
-                                        className={`p-3 rounded-md border ${idx === questions[currentQuestionIndex]?.correctAnswer
+                                        className={`p-3 rounded-md border ${isAnswerRevealed && idx === questions[currentQuestionIndex]?.correctAnswer
                                             ? "bg-green-100 border-green-300 dark:bg-green-900/30"
                                             : "bg-muted/30"
                                             }`}
@@ -256,13 +259,27 @@ export function HostScreen({ questions, userId, quizId }: { questions: Question[
                                     </div>
                                 ))}
                             </div>
-                            <Button onClick={nextQuestion} className="w-full mt-4">
-                                {currentQuestionIndex < questions.length - 1 ? (
-                                    <>Next Question <ArrowRight className="ml-2 h-4 w-4" /></>
-                                ) : (
-                                    <>End Quiz <Trophy className="ml-2 h-4 w-4" /></>
-                                )}
-                            </Button>
+                            <div className="flex gap-2 mt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsAnswerRevealed(true)}
+                                    disabled={isAnswerRevealed}
+                                    className="flex-1"
+                                >
+                                    {isAnswerRevealed ? (
+                                        <>Answer Revealed <Eye className="ml-2 h-4 w-4" /></>
+                                    ) : (
+                                        <>Reveal Answer <EyeOff className="ml-2 h-4 w-4" /></>
+                                    )}
+                                </Button>
+                                <Button onClick={nextQuestion} className="flex-1">
+                                    {currentQuestionIndex < questions.length - 1 ? (
+                                        <>Next Question <ArrowRight className="ml-2 h-4 w-4" /></>
+                                    ) : (
+                                        <>End Quiz <Trophy className="ml-2 h-4 w-4" /></>
+                                    )}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
 

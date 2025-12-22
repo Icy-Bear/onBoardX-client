@@ -177,12 +177,38 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             e.returnValue = '';
         };
 
+        const handleResize = () => {
+            // Check if window size is significantly reduced (indication of split screen)
+            // We use screen.availWidth/Height as a baseline for what "full" should roughly be
+            // But simpler is to check if it's not fullscreen
+
+            if (!document.fullscreenElement) {
+                // If not fullscreen, we already handle that with fullscreenchange
+                // But split screen might keep fullscreen active in some browsers? Unlikely.
+                // Main issue is if they resize the window on desktop or split screen on mobile
+
+                // If we are in "playing" mode, we expect to be fullscreen.
+                // If resize happens and we are NOT fullscreen, it's a violation.
+                // If we ARE fullscreen, resize shouldn't happen usually unless device rotation?
+
+                // Let's just check if the window is significantly smaller than the screen
+                const widthRatio = window.innerWidth / screen.width;
+                const heightRatio = window.innerHeight / screen.height;
+
+                // If taking up less than 90% of screen in either dimension (allow for some UI bars)
+                if (widthRatio < 0.9 || heightRatio < 0.8) {
+                    handleViolation("Split-screen or window resizing is not allowed!");
+                }
+            }
+        };
+
         document.addEventListener("visibilitychange", handleVisibilityChange);
         window.addEventListener("blur", handleBlur);
         document.addEventListener("fullscreenchange", handleFullscreenChange);
         document.addEventListener("contextmenu", handleContextMenu);
         document.addEventListener("keydown", handleKeyDown);
         window.addEventListener("beforeunload", handleBeforeUnload);
+        window.addEventListener("resize", handleResize);
 
         // Check fullscreen on mount/update
         setIsFullscreen(!!document.fullscreenElement);
@@ -194,6 +220,7 @@ export function PlayScreen({ userName, userId }: { userName: string, userId: str
             document.removeEventListener("contextmenu", handleContextMenu);
             document.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("beforeunload", handleBeforeUnload);
+            window.removeEventListener("resize", handleResize);
         };
     }, [gameStatus, warnings, socket, sessionId, joined]);
 
