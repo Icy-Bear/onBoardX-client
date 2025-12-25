@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,7 +30,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Fun Hero Section (Bento Grid Style) */}
-        <section className="w-full py-12 md:py-24 lg:py-32 relative">
+        <section className="w-full py-12 pt-32 md:py-24 lg:py-32 relative">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-7xl mx-auto">
 
@@ -412,7 +413,14 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-2">
               <Link className="flex items-center gap-2 mb-4" href="#">
-                <Shield className="w-6 h-6 text-primary" />
+                <div className="relative w-8 h-8">
+                  <Image
+                    src="/icon0.svg"
+                    alt="onBoardX Logo"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
                 <span className="font-bold text-xl">onBoardX</span>
               </Link>
               <p className="text-muted-foreground max-w-xs">
